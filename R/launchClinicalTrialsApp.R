@@ -3,33 +3,32 @@
 #' This function encapsulates the UI and server logic for a Shiny application
 #' that enables users to interactively explore clinical trials data.
 #'
+#' @param con A database connection object created by DBI::dbConnect().
+#'            This connection is used for accessing the clinical trials data
+#'            stored in a database.
 #' @importFrom shiny shinyApp fluidPage titlePanel sidebarLayout sidebarPanel mainPanel
 #' @importFrom shiny textInput selectInput numericInput tabsetPanel tabPanel plotOutput dataTableOutput
-#' @importFrom shiny renderPlot renderDataTable reactive
-#' @importFrom dplyr filter left_join select arrange summarise group_by rename
+#' @importFrom shiny renderPlot renderDataTable reactive h3 h4 conditionalPanel wellPanel tags
+#' @importFrom dplyr filter left_join select arrange summarise group_by rename %>%
 #' @importFrom tidyr complete
-#' @importFrom DT DTOutput renderDT
+#' @importFrom DT DTOutput renderDT datatable
 #' @importFrom ggplot2 ggplot aes geom_col coord_polar theme_void theme_bw theme xlab ylab geom_bar
 #' @importFrom DBI dbConnect dbListTables
+#' @importFrom purrr map_dbl
 #' @export
 
-launchClinicalTrialsApp <- function() {
-  max_num_studies = 1000
-
-  external_db_path <- file.path("..", "ctgov.duckdb")
-  db_path <- if (file.exists(external_db_path)) {
-    external_db_path
-  } else {
-    # Fallback to the internal package path
-    system.file("extdata", "ctgov.duckdb", package = "bis620.2023")
+launchClinicalTrialsApp <- function(con) {
+  # Ensure a valid database connection is provided
+  if (is.null(con) || !DBI::dbIsValid(con)) {
+    stop("A valid database connection must be provided.")
   }
-
-  con <- DBI::dbConnect(duckdb::duckdb(), db_path, read_only = TRUE)
 
   # Check the connection
   if (length(DBI::dbListTables(con)) == 0) {
-    stop("Problem reading from the database connection at ", db_path)
+    stop("Problem reading from the database connection.")
   }
+
+  max_num_studies = 1000
 
   # Define UI
   ui <- fluidPage(
@@ -81,6 +80,8 @@ launchClinicalTrialsApp <- function() {
 
   # Define Server
   server <- function(input, output, session) {
+    studies = tbl(con, "studies")
+    sponsors = tbl(con, "sponsors")
 
     get_studies = reactive({
       if (input$brief_title_kw != "") {

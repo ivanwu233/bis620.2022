@@ -7,8 +7,9 @@
 #' @return A tibble with a `date` column and a `count` of the number of
 #'         concurrent trials at that date.
 #' @importFrom tidyr pivot_longer
-#' @importFrom dplyr select distinct arrange rename
+#' @importFrom dplyr select distinct arrange rename everything
 #' @importFrom purrr map_dbl
+#' @importFrom stats na.omit
 #' @export
 
 get_concurrent_trials <- function(d) {

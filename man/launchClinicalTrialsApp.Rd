@@ -4,7 +4,12 @@
 \alias{launchClinicalTrialsApp}
 \title{Launch Clinical Trials Shiny Application}
 \usage{
-launchClinicalTrialsApp()
+launchClinicalTrialsApp(con)
+}
+\arguments{
+\item{con}{A database connection object created by DBI::dbConnect().
+This connection is used for accessing the clinical trials data
+stored in a database.}
 }
 \description{
 This function encapsulates the UI and server logic for a Shiny application

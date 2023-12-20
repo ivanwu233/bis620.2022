@@ -1,0 +1,189 @@
+---
+title: "Abstract"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Abstract}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(bis620.2023)
+```
+
+
+### Background and Motivation
+Clinical trials are fundamental in advancing medical knowledge and patient care. They provide the basis for developing new treatments and understanding the efficacy and safety of interventions. However, a significant gap exists in the representation of older adults in these trials. This demographic is often underrepresented, despite being a large consumer of healthcare services.
+
+The relevance of this research lies in addressing this gap. With an aging global population, understanding how medical treatments affect older adults becomes increasingly crucial. Older adults often have different physiological responses and higher comorbidity rates compared to younger populations, which can impact the efficacy and safety of treatments.
+
+Therefore, analyzing clinical trials focusing on elderly participants is essential. It provides insights into the effectiveness and risks of medical interventions in this age group, ensuring that healthcare recommendations are inclusive and based on evidence that is representative of the entire population. This research aims to highlight trends, challenges, and opportunities in clinical trials involving older adults, contributing to more informed, effective, and safer healthcare practices for an aging society.
+
+### Research Question
+The research question is: "How do trial phase and enrollment size influence the completion rates of clinical trials involving elderly participants?"
+
+This question seeks to uncover patterns and correlations in clinical trials that include older adult participants. The aim is to discover how different factors contribute to the success or challenges of these trials, such as understanding whether certain trial phases are more likely to complete, how enrollment size impacts outcomes, and specifically, the influence of including elderly participants. This analysis will provide insights into optimizing trial design and improving outcomes and representation of older adults in clinical research.
+
+### Data Cleaning and Exploration
+The analysis is initailed by examining the clinical trials database, specifically focusing on the 'Studies' and 'Eligibilities' tables. The primary goal was to understand the data structure and quality, especially concerning trials involving older adults.
+
+Accessing the Data:
+
+To establish a connection to the DuckDB database:
+```{r}
+library(DBI)
+library(duckdb)
+library(dplyr)
+# Define the path to the database file
+db_path <- if (file.exists("C:/Users/wuqif/Desktop/BIS 620/ctgov.duckdb")) {
+  "C:/Users/wuqif/Desktop/BIS 620/ctgov.duckdb"
+} else {
+  # Default to the current working directory for other users
+  "ctgov.duckdb"
+}
+
+con <- dbConnect(duckdb::duckdb(), db_path)
+
+
+message("Using database at: ", db_path)
+```
+
+Data Exploration:
+
+Data cleaning involves filtering irrelevant or incomplete records for consistency and initial exploration helps understand dataset characteristics:
+```{r}
+studies_data <- dbGetQuery(con, "SELECT * FROM Studies WHERE overall_status IS NOT NULL AND phase IS NOT NULL")
+eligibilities_data <- dbGetQuery(con, "SELECT * FROM Eligibilities WHERE older_adult IS NOT NULL")
+
+calc_prop_na_nonfinite <- function(data) {
+  sapply(data, function(x) mean(is.na(x) | !is.finite(x)))
+}
+
+prop_na_nonfinite_studies <- calc_prop_na_nonfinite(studies_data)
+prop_na_nonfinite_eligibilities <- calc_prop_na_nonfinite(eligibilities_data)
+
+print(prop_na_nonfinite_studies)
+print(prop_na_nonfinite_eligibilities)
+
+
+```
+Data cleaning:
+```{r}
+# Retrieve trials involving older adults
+older_adults_trials <- get_trials_for_older_adults(con)
+
+# Specify columns of interest for older_adults_trials
+studies_cols_of_interest <- c("nct_id", "phase", "overall_status", "enrollment")
+
+# Removing rows with missing values in specific columns from older_adults_trials
+older_adults_trials <- older_adults_trials %>%
+    filter(complete.cases(select(., all_of(studies_cols_of_interest))))
+
+eligibilities_cols_of_interest <- c("nct_id", "older_adult")
+
+# Removing rows with missing values in specific columns from eligibilities_data
+eligibilities_data <- eligibilities_data %>%
+    filter(complete.cases(select(., all_of(eligibilities_cols_of_interest))))
+
+```
+
+Exploratory Data Analysis:
+
+Initial exploration helps understand dataset characteristics:
+```{r}
+# Summary Statistics:
+# Gain an overview of the dataset, focusing on the columns of interest.
+summary(select(older_adults_trials, all_of(studies_cols_of_interest)))
+
+```
+```{r}
+# Distribution of Trial Phases:
+#Examine the distribution of trial phases among older adult trials.
+library(ggplot2)
+
+ggplot(older_adults_trials, aes(x = phase)) +
+  geom_bar() +
+  theme_minimal() +
+  labs(title = "Distribution of Trial Phases in Older Adult Trials", x = "Trial Phase", y = "Count")
+
+```
+
+### Analysis
+Methods Overview
+
+The analysis aims to understand the factors influencing the completion rates of clinical trials involving elderly participants. The primary methods include logistic regression analysis and descriptive statistics. The logistic regression model examines the relationship between trial completion status and factors such as trial phase, enrollment size, and the inclusion of older adults. Additionally, descriptive analyses provide insights into the completion rates across different trial phases.
+
+Logistic Regression Analysis
+
+The analyze_completion_logistic_regression function performs logistic regression to study the impact of various factors on trial completion.
+```{r}
+# Assuming older_adults_trials and eligibilities_data are already loaded and cleaned
+logistic_model <- analyze_completion_logistic_regression(older_adults_trials, eligibilities_data)
+
+# Display the summary of the logistic regression model
+summary(logistic_model)
+
+```
+Descriptive Analysis of Completion Rates by Phase
+
+The analyze_elderly_trial_completion function provides a descriptive analysis of the completion rates across different phases in trials involving older adults.
+```{r}
+completion_analysis <- analyze_elderly_trial_completion(older_adults_trials, eligibilities_data)
+
+# Display the analysis results
+print(completion_analysis)
+
+```
+
+Visualization of Completion Status by Phase
+
+The plot_elderly_trial_completion_by_phase function visualizes the completion status of trials grouped by their phase.
+```{r}
+completion_status_plot <- plot_elderly_trial_completion_by_phase(older_adults_trials, eligibilities_data)
+
+print(completion_status_plot)
+
+```
+
+### Interpretation and Conclusions
+Interpretation of Logistic Regression Analysis
+
+The logistic regression model has provided valuable insights into factors that affect the completion status of clinical trials involving elderly participants. The model's coefficients indicate how the log odds of trial completion change with each unit increase in the predictor variables, holding all other variables constant.
+
+Trial Phase: The positive coefficients for trial phases suggest that compared to the baseline phase (which could be inferred as the one not listed, possibly Phase 0 or some other reference category), all other phases are more likely to complete. This might indicate that once a trial progresses beyond the initial stages, its likelihood of completion improves.
+
+Enrollment Log: The positive coefficient for enrollment_log implies that as the log of enrollment size increases, the likelihood of trial completion also increases. This could be due to larger trials having more resources and better infrastructure in place to reach completion.
+
+Is Elderly: The coefficient for is_elderly is not defined, which might indicate a lack of variability in the data for this variable or a perfect prediction scenario. It's possible that all trials in the dataset involve elderly participants, making this variable non-informative.
+
+Descriptive Analysis of Completion Rates by Phase
+The completion proportions for each trial phase indicate that phases 1, 3, and 4 have higher completion rates compared to early phase 1 and phase 2 trials. This suggests that trials are more likely to complete as they advance in phase, which could be due to a variety of factors such as increased funding, clearer objectives, and more refined methodologies that come with later-stage trials.
+
+Visualization Interpretation
+
+The bar plot visualization reinforces the descriptive statistics, showing that later trial phases tend to have a higher number of completed trials. The visual trend suggests a positive relationship between the advancement of a trial phase and its completion status, which could be crucial for planning and resource allocation in clinical trials involving older adults.
+
+Implications for Elderly Participation in Clinical Trials
+
+These findings have significant implications for the design and management of clinical trials involving elderly participants. Understanding that trial phase and enrollment size are correlated with completion can help researchers and sponsors design trials that are more likely to reach completion, ensuring that the findings from these trials can contribute to medical knowledge regarding elderly care.
+
+Moreover, the results underscore the importance of involving elderly participants in all phases of clinical trials to ensure that the data collected is representative of the population most likely to use the interventions being studied.
+
+Conclusions
+
+This analysis highlights the importance of both trial phase and enrollment size in the successful completion of clinical trials involving elderly participants. These factors should be carefully considered when designing and conducting such trials.
+
+The absence of a defined coefficient for elderly participation may require a deeper investigation, possibly looking at interactions with other variables or using alternative analytical techniques.
+
+Future Research Directions
+
+Future research could explore the reasons behind the higher completion rates in certain trial phases, such as the availability of resources or the nature of interventions being tested. Additionally, further studies could investigate why some trials do not complete, with a particular focus on trials that include elderly participants.
+
+Understanding these dynamics can lead to improved trial designs that are more inclusive and reflective of the aging population, ultimately leading to better health outcomes for older adults.

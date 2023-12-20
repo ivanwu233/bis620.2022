@@ -8,5 +8,5 @@ test_studies <- data.frame(
 
 test_that("plot_phase_histogram returns a ggplot object", {
   result_plot <- plot_phase_histogram(test_studies)
-  expect_true(is.ggplot(result_plot))
+  expect_true(inherits(result_plot, "ggplot"))
 })

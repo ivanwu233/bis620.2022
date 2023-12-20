@@ -22,6 +22,10 @@ knitr::opts_chunk$set(
 
 The goal of bis620.2023 is to provide a set of tools and a Shiny application for analyzing and exploring clinical trials data. This package is designed for the BIS620 class and offers functionalities for data processing and visualization, along with an interactive Shiny application for in-depth data exploration.
 
+The extended goal of `bis620.2023` is to analyze the impact of various factors on the completion rates of clinical trials involving elderly participants. This package now includes functions designed to extract, analyze, and visualize data pertinent to this research question, enabling insightful conclusions about how factors like trial phase, enrollment size, and elderly participation influence the likelihood of trial completion.
+
+
+
 ## Installation
 
 You can install the development version of bis620.2023 from [GitHub](https://github.com/) with:
@@ -34,7 +38,55 @@ devtools::install_github("ivanwu233/bis620.2022")
 
 
 ##Database Setup
-The package requires an external DuckDB database file (ctgov.duckdb) to function properly. You need to download this file and place it in a known directory. The package will attempt to locate this file in the parent directory of your current working directory. If it is located elsewhere, you will need to specify its path when launching the Shiny application.
+The package requires an external DuckDB database file (ctgov.duckdb) to function properly. You need to download this file and place it in the WORKING DIRECTROY of your working directory. 
+
+Here's how you can get the package:
+
+```{r eval=FALSE}
+devtools::install_github("presagia-analytics/ctrialsgov")
+library(ctrialsgov) 
+# ONLY RUN THIS ONCE!
+ctgov_get_latest_snapshot()
+```
+
 
 ##Launching the Shiny Application
 To launch the interactive Shiny application:
+you should have your duckdb connection ready(refer to the example)
+```{r eval=FALSE}
+library(DBI)
+library(duckdb)
+library(dplyr)
+library(dbplyr)
+con = dbConnect(duckdb("ctgov.duckdb"))
+dbListTables(con)
+launchClinicalTrialsApp(con)
+# dbDisconnect(con)
+```
+
+## Analyzing Clinical Trials Data
+To analyze clinical trials data involving elderly participants, you can use the following functions:
+```{r eval=FALSE}
+#Extracts trials involving elderly participants.
+   older_adults_trials <- get_trials_for_older_adults(con)
+```
+
+
+```{r eval=FALSE}
+#Analyzes completion rates of these trials.
+completion_analysis <- analyze_elderly_trial_completion(older_adults_trials$studies, older_adults_trials$eligibilities)
+
+```
+
+```{r eval=FALSE}
+#Performs logistic regression analysis.
+completion_analysis <- analyze_elderly_trial_completion(older_adults_trials$studies, older_adults_trials$eligibilities)
+
+```
+
+```{r eval=FALSE}
+#Visualizes completion status by trial phase.
+plot <- plot_elderly_trial_completion_by_phase(studies_data, eligibilities_data)
+print(plot)
+```
+

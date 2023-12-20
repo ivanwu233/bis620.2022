@@ -13,6 +13,7 @@
 #'         associated with each condition on the x-axis.
 #' @export
 #' @importFrom ggplot2 ggplot aes geom_col theme_bw xlab ylab coord_flip
+#' @importFrom stats reorder
 
 plot_conditions_histogram <- function(x) {
   if (!("name" %in% names(x)) || !("count" %in% names(x))) {
